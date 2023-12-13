@@ -921,8 +921,8 @@ int main(int argc, char** argv)
                         file_split.push_back(token1);
                     }
 
-                    input_files.push_back(file_split[0]);
-                    output_files.push_back(file_split[1]);
+                    input_files.push_back((path_t) file_split[0]);
+                    output_files.push_back((path_t) file_split[1]);
                 }
 
                 mainProcess(scale, jobs_load, input_files, output_files, use_gpu_count, jobs_proc, total_jobs_proc, jobs_save, verbose, realesrgan);
