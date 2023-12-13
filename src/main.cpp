@@ -195,9 +195,15 @@ void* load(void* args)
     const LoadThreadParams* ltp = (const LoadThreadParams*) args;
     const int count = ltp->input_files.size();
     const int scale = ltp->scale;
+#if _WIN32
+    fwprintf(stderr, L"Loading images...\n");
+    fwprintf(stderr, L"Total images: %d\n", count);
+    fwprintf(stderr, L"jobs_load: %d\n", ltp->jobs_load);
+#else  // _WIN32
     fprintf(stderr, "Loading images...\n");
     fprintf(stderr, "Total images: %d\n", count);
     fprintf(stderr, "jobs_load: %d\n", ltp->jobs_load);
+#endif // _WIN32
 #pragma omp parallel for schedule(static, 1) num_threads(ltp->jobs_load)
     for (int i = 0; i < count; i++)
     {
@@ -216,8 +222,11 @@ void* load(void* args)
         FILE* fp = fopen(imagepath.c_str(), "rb");
 #endif
         if (!fp) {
-
+#if _WIN32
+            fwprintf(stderr, L"Failed to open file: %ls\n", imagepath.c_str());
+#else  // _WIN32
             fprintf(stderr, "Failed to open file: %s\n", imagepath_str.c_str());
+#endif // _WIN32
             continue;
         }
         if (fp)
@@ -303,8 +312,8 @@ void* load(void* args)
 #else  // _WIN32
             fprintf(stderr, "decode image %s failed\n", imagepath.c_str());
 #endif // _WIN32
-                        }
-                    }
+        }
+    }
 
     return 0;
 }
@@ -406,7 +415,11 @@ void* save(void* args)
         }
         if (success)
         {
+#if _WIN32
+            fwprintf(stderr, L"Upscayl Successful\n");
+#else
             fprintf(stderr, "Upscayl Successful\n");
+#endif
 
             if (verbose)
             {
@@ -616,7 +629,7 @@ int main(int argc, char** argv)
     {
         print_usage();
         return -1;
-        }
+    }
 
     if (tilesize.size() != (gpuid.empty() ? 1 : gpuid.size()) && !tilesize.empty())
     {
@@ -859,8 +872,13 @@ int main(int argc, char** argv)
     }
 
     {
+#if _WIN32
+        fwprintf(stderr, L"RealESRGAN realesrgan(use_gpu_count): %d\n", use_gpu_count);
+        fwprintf(stderr, L"realesrgan.load(paramfullpath, modelfullpath): %ls, %ls\n", paramfullpath.c_str(), modelfullpath.c_str());
+#else        
         fprintf(stderr, "RealESRGAN realesrgan(use_gpu_count): %d\n", use_gpu_count);
         fprintf(stderr, "realesrgan.load(paramfullpath, modelfullpath): %s, %s\n", paramfullpath.c_str(), modelfullpath.c_str());
+#endif
         std::vector<RealESRGAN*> realesrgan(use_gpu_count);
 
         for (int i = 0; i < use_gpu_count; i++)
@@ -877,8 +895,6 @@ int main(int argc, char** argv)
         fprintf(stderr, "main routine\n");
         // main routine
         {
-            // load image
-            //XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
             mainProcess(scale, jobs_load, input_files, output_files, use_gpu_count, jobs_proc, total_jobs_proc, jobs_save, verbose, realesrgan);
 
             std::string input_from_stdin = "";
@@ -911,8 +927,6 @@ int main(int argc, char** argv)
                 mainProcess(scale, jobs_load, input_files, output_files, use_gpu_count, jobs_proc, total_jobs_proc, jobs_save, verbose, realesrgan);
                 std::getline(std::cin, input_from_stdin);
             }
-
-
         }
 
         for (int i = 0; i < use_gpu_count; i++)
@@ -925,4 +939,4 @@ int main(int argc, char** argv)
     ncnn::destroy_gpu_instance();
 
     return 0;
-    }
+}
