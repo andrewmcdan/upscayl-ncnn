@@ -6,6 +6,7 @@
 #include <vector>
 #include <clocale>
 #include <filesystem>
+#include <sstream>
 namespace fs = std::filesystem;
 
 #if _WIN32
