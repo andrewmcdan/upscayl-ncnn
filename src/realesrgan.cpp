@@ -110,7 +110,9 @@ int RealESRGAN::load(const std::string& parampath, const std::string& modelpath)
         fclose(fp);
     }
 #else
+    fprintf(stderr, "load param %s\n", parampath.c_str());
     net.load_param(parampath.c_str());
+    fprintf(stderr, "load model %s\n", modelpath.c_str());
     net.load_model(modelpath.c_str());
 #endif
 
@@ -144,8 +146,7 @@ int RealESRGAN::load(const std::string& parampath, const std::string& modelpath)
                 realesrgan_postproc->create(realesrgan_postproc_tta_fp16s_spv_data, sizeof(realesrgan_postproc_tta_fp16s_spv_data), specializations);
             else
                 realesrgan_postproc->create(realesrgan_postproc_tta_spv_data, sizeof(realesrgan_postproc_tta_spv_data), specializations);
-        }
-        else
+        } else
         {
             if (net.opt.use_fp16_storage && net.opt.use_int8_storage)
                 realesrgan_preproc->create(realesrgan_preproc_int8s_spv_data, sizeof(realesrgan_preproc_int8s_spv_data), specializations);
@@ -206,7 +207,7 @@ int RealESRGAN::load(const std::string& parampath, const std::string& modelpath)
 
 int RealESRGAN::process(const ncnn::Mat& inimage, ncnn::Mat& outimage) const
 {
-    const unsigned char* pixeldata = (const unsigned char*)inimage.data;
+    const unsigned char* pixeldata = (const unsigned char*) inimage.data;
     const int w = inimage.w;
     const int h = inimage.h;
     const int channels = inimage.elempack;
@@ -239,9 +240,8 @@ int RealESRGAN::process(const ncnn::Mat& inimage, ncnn::Mat& outimage) const
         ncnn::Mat in;
         if (opt.use_fp16_storage && opt.use_int8_storage)
         {
-            in = ncnn::Mat(w, (in_tile_y1 - in_tile_y0), (unsigned char*)pixeldata + in_tile_y0 * w * channels, (size_t)channels, 1);
-        }
-        else
+            in = ncnn::Mat(w, (in_tile_y1 - in_tile_y0), (unsigned char*) pixeldata + in_tile_y0 * w * channels, (size_t) channels, 1);
+        } else
         {
             if (channels == 3)
             {
@@ -281,11 +281,10 @@ int RealESRGAN::process(const ncnn::Mat& inimage, ncnn::Mat& outimage) const
         ncnn::VkMat out_gpu;
         if (opt.use_fp16_storage && opt.use_int8_storage)
         {
-            out_gpu.create(w * scale, (out_tile_y1 - out_tile_y0) * scale, (size_t)channels, 1, blob_vkallocator);
-        }
-        else
+            out_gpu.create(w * scale, (out_tile_y1 - out_tile_y0) * scale, (size_t) channels, 1, blob_vkallocator);
+        } else
         {
-            out_gpu.create(w * scale, (out_tile_y1 - out_tile_y0) * scale, channels, (size_t)4u, 1, blob_vkallocator);
+            out_gpu.create(w * scale, (out_tile_y1 - out_tile_y0) * scale, channels, (size_t) 4u, 1, blob_vkallocator);
         }
 
         for (int xi = 0; xi < xtiles; xi++)
@@ -430,8 +429,7 @@ int RealESRGAN::process(const ncnn::Mat& inimage, ncnn::Mat& outimage) const
 
                     cmd.record_pipeline(realesrgan_postproc, bindings, constants, dispatcher);
                 }
-            }
-            else
+            } else
             {
                 // preproc
                 ncnn::VkMat in_tile_gpu;
@@ -550,7 +548,7 @@ int RealESRGAN::process(const ncnn::Mat& inimage, ncnn::Mat& outimage) const
                 cmd.reset();
             }
 
-            fprintf(stderr, "%.2f%%\n", (float)(yi * xtiles + xi) / (ytiles * xtiles) * 100);
+            fprintf(stderr, "%.2f%%\n", (float) (yi * xtiles + xi) / (ytiles * xtiles) * 100);
         }
 
         // download
@@ -559,7 +557,7 @@ int RealESRGAN::process(const ncnn::Mat& inimage, ncnn::Mat& outimage) const
 
             if (opt.use_fp16_storage && opt.use_int8_storage)
             {
-                out = ncnn::Mat(out_gpu.w, out_gpu.h, (unsigned char*)outimage.data + yi * scale * TILE_SIZE_Y * w * scale * channels, (size_t)channels, 1);
+                out = ncnn::Mat(out_gpu.w, out_gpu.h, (unsigned char*) outimage.data + yi * scale * TILE_SIZE_Y * w * scale * channels, (size_t) channels, 1);
             }
 
             cmd.record_clone(out_gpu, out, opt);
@@ -571,17 +569,17 @@ int RealESRGAN::process(const ncnn::Mat& inimage, ncnn::Mat& outimage) const
                 if (channels == 3)
                 {
 #if _WIN32
-                    out.to_pixels((unsigned char*)outimage.data + yi * scale * TILE_SIZE_Y * w * scale * channels, ncnn::Mat::PIXEL_RGB2BGR);
+                    out.to_pixels((unsigned char*) outimage.data + yi * scale * TILE_SIZE_Y * w * scale * channels, ncnn::Mat::PIXEL_RGB2BGR);
 #else
-                    out.to_pixels((unsigned char*)outimage.data + yi * scale * TILE_SIZE_Y * w * scale * channels, ncnn::Mat::PIXEL_RGB);
+                    out.to_pixels((unsigned char*) outimage.data + yi * scale * TILE_SIZE_Y * w * scale * channels, ncnn::Mat::PIXEL_RGB);
 #endif
                 }
                 if (channels == 4)
                 {
 #if _WIN32
-                    out.to_pixels((unsigned char*)outimage.data + yi * scale * TILE_SIZE_Y * w * scale * channels, ncnn::Mat::PIXEL_RGBA2BGRA);
+                    out.to_pixels((unsigned char*) outimage.data + yi * scale * TILE_SIZE_Y * w * scale * channels, ncnn::Mat::PIXEL_RGBA2BGRA);
 #else
-                    out.to_pixels((unsigned char*)outimage.data + yi * scale * TILE_SIZE_Y * w * scale * channels, ncnn::Mat::PIXEL_RGBA);
+                    out.to_pixels((unsigned char*) outimage.data + yi * scale * TILE_SIZE_Y * w * scale * channels, ncnn::Mat::PIXEL_RGBA);
 #endif
                 }
             }

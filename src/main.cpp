@@ -28,15 +28,15 @@ namespace fs = std::filesystem;
 
 #if _WIN32
 #include <wchar.h>
-static wchar_t *optarg = NULL;
+static wchar_t* optarg = NULL;
 static int optind = 1;
-static wchar_t getopt(int argc, wchar_t *const argv[], const wchar_t *optstring)
+static wchar_t getopt(int argc, wchar_t* const argv[], const wchar_t* optstring)
 {
     if (optind >= argc || argv[optind][0] != L'-')
         return -1;
 
     wchar_t opt = argv[optind][1];
-    const wchar_t *p = wcschr(optstring, opt);
+    const wchar_t* p = wcschr(optstring, opt);
     if (p == NULL)
         return L'?';
 
@@ -56,12 +56,12 @@ static wchar_t getopt(int argc, wchar_t *const argv[], const wchar_t *optstring)
     return opt;
 }
 
-static std::vector<int> parse_optarg_int_array(const wchar_t *optarg)
+static std::vector<int> parse_optarg_int_array(const wchar_t* optarg)
 {
     std::vector<int> array;
     array.push_back(_wtoi(optarg));
 
-    const wchar_t *p = wcschr(optarg, L',');
+    const wchar_t* p = wcschr(optarg, L',');
     while (p)
     {
         p++;
@@ -74,12 +74,12 @@ static std::vector<int> parse_optarg_int_array(const wchar_t *optarg)
 #else               // _WIN32
 #include <unistd.h> // getopt()
 
-static std::vector<int> parse_optarg_int_array(const char *optarg)
+static std::vector<int> parse_optarg_int_array(const char* optarg)
 {
     std::vector<int> array;
     array.push_back(atoi(optarg));
 
-    const char *p = strchr(optarg, ',');
+    const char* p = strchr(optarg, ',');
     while (p)
     {
         p++;
@@ -137,7 +137,7 @@ public:
     {
     }
 
-    void put(const Task &v)
+    void put(const Task& v)
     {
         lock.lock();
 
@@ -153,7 +153,7 @@ public:
         condition.signal();
     }
 
-    void get(Task &v)
+    void get(Task& v)
     {
         lock.lock();
 
@@ -190,39 +190,41 @@ public:
     std::vector<path_t> output_files;
 };
 
-void *load(void *args)
+void* load(void* args)
 {
-    const LoadThreadParams *ltp = (const LoadThreadParams *)args;
+    const LoadThreadParams* ltp = (const LoadThreadParams*) args;
     const int count = ltp->input_files.size();
     const int scale = ltp->scale;
-
+    fprintf(stderr, "Loading images...\n");
+    fprintf(stderr, "Total images: %d\n", count);
+    fprintf(stderr, "jobs_load: %d\n", ltp->jobs_load);
 #pragma omp parallel for schedule(static, 1) num_threads(ltp->jobs_load)
     for (int i = 0; i < count; i++)
     {
-        const path_t &imagepath = ltp->input_files[i];
+        const path_t& imagepath = ltp->input_files[i];
 
         int webp = 0;
 
-        unsigned char *pixeldata = 0;
+        unsigned char* pixeldata = 0;
         int w;
         int h;
         int c;
 
 #if _WIN32
-        FILE *fp = _wfopen(imagepath.c_str(), L"rb");
+        FILE* fp = _wfopen(imagepath.c_str(), L"rb");
 #else
-        FILE *fp = fopen(imagepath.c_str(), "rb");
+        FILE* fp = fopen(imagepath.c_str(), "rb");
 #endif
         if (fp)
         {
             // read whole file
-            unsigned char *filedata = 0;
+            unsigned char* filedata = 0;
             int length = 0;
             {
                 fseek(fp, 0, SEEK_END);
                 length = ftell(fp);
                 rewind(fp);
-                filedata = (unsigned char *)malloc(length);
+                filedata = (unsigned char*) malloc(length);
                 if (filedata)
                 {
                     fread(filedata, 1, length, fp);
@@ -236,8 +238,7 @@ void *load(void *args)
                 if (pixeldata)
                 {
                     webp = 1;
-                }
-                else
+                } else
                 {
                     // not webp, try jpg png etc.
 #if _WIN32
@@ -253,8 +254,7 @@ void *load(void *args)
                             stbi_image_free(pixeldata);
                             pixeldata = stbi_load_from_memory(filedata, length, &w, &h, &c, 3);
                             c = 3;
-                        }
-                        else if (c == 2)
+                        } else if (c == 2)
                         {
                             // grayscale + alpha -> rgba
                             stbi_image_free(pixeldata);
@@ -275,8 +275,8 @@ void *load(void *args)
             v.inpath = imagepath;
             v.outpath = ltp->output_files[i];
 
-            v.inimage = ncnn::Mat(w, h, (void *)pixeldata, (size_t)c, c);
-            v.outimage = ncnn::Mat(w * scale, h * scale, (size_t)c, c);
+            v.inimage = ncnn::Mat(w, h, (void*) pixeldata, (size_t) c, c);
+            v.outimage = ncnn::Mat(w * scale, h * scale, (size_t) c, c);
 
             path_t ext = get_file_extension(v.outpath);
             if (c == 4 && (ext == PATHSTR("jpg") || ext == PATHSTR("JPG") || ext == PATHSTR("jpeg") || ext == PATHSTR("JPEG")))
@@ -291,8 +291,7 @@ void *load(void *args)
             }
 
             toproc.put(v);
-        }
-        else
+        } else
         {
 #if _WIN32
             fwprintf(stderr, L"decode image %ls failed\n", imagepath.c_str());
@@ -308,13 +307,13 @@ void *load(void *args)
 class ProcThreadParams
 {
 public:
-    const RealESRGAN *realesrgan;
+    const RealESRGAN* realesrgan;
 };
 
-void *proc(void *args)
+void* proc(void* args)
 {
-    const ProcThreadParams *ptp = (const ProcThreadParams *)args;
-    const RealESRGAN *realesrgan = ptp->realesrgan;
+    const ProcThreadParams* ptp = (const ProcThreadParams*) args;
+    const RealESRGAN* realesrgan = ptp->realesrgan;
 
     for (;;)
     {
@@ -339,9 +338,9 @@ public:
     int verbose;
 };
 
-void *save(void *args)
+void* save(void* args)
 {
-    const SaveThreadParams *stp = (const SaveThreadParams *)args;
+    const SaveThreadParams* stp = (const SaveThreadParams*) args;
     const int verbose = stp->verbose;
 
     for (;;)
@@ -355,12 +354,11 @@ void *save(void *args)
 
         // free input pixel data
         {
-            unsigned char *pixeldata = (unsigned char *)v.inimage.data;
+            unsigned char* pixeldata = (unsigned char*) v.inimage.data;
             if (v.webp == 1)
             {
                 free(pixeldata);
-            }
-            else
+            } else
             {
 #if _WIN32
                 free(pixeldata);
@@ -385,17 +383,15 @@ void *save(void *args)
 
         if (ext == PATHSTR("webp") || ext == PATHSTR("WEBP"))
         {
-            success = webp_save(v.outpath.c_str(), v.outimage.w, v.outimage.h, v.outimage.elempack, (const unsigned char *)v.outimage.data);
-        }
-        else if (ext == PATHSTR("png") || ext == PATHSTR("PNG"))
+            success = webp_save(v.outpath.c_str(), v.outimage.w, v.outimage.h, v.outimage.elempack, (const unsigned char*) v.outimage.data);
+        } else if (ext == PATHSTR("png") || ext == PATHSTR("PNG"))
         {
 #if _WIN32
             success = wic_encode_image(v.outpath.c_str(), v.outimage.w, v.outimage.h, v.outimage.elempack, v.outimage.data);
 #else
             success = stbi_write_png(v.outpath.c_str(), v.outimage.w, v.outimage.h, v.outimage.elempack, v.outimage.data, 0);
 #endif
-        }
-        else if (ext == PATHSTR("jpg") || ext == PATHSTR("JPG") || ext == PATHSTR("jpeg") || ext == PATHSTR("JPEG"))
+        } else if (ext == PATHSTR("jpg") || ext == PATHSTR("JPG") || ext == PATHSTR("jpeg") || ext == PATHSTR("JPEG"))
         {
 #if _WIN32
             success = wic_encode_jpeg_image(v.outpath.c_str(), v.outimage.w, v.outimage.h, v.outimage.elempack, v.outimage.data);
@@ -415,8 +411,7 @@ void *save(void *args)
                 fprintf(stderr, "%s -> %s done\n", v.inpath.c_str(), v.outpath.c_str());
 #endif
             }
-        }
-        else
+        } else
         {
 #if _WIN32
             fwprintf(stderr, L"encode image %ls failed\n", v.outpath.c_str());
@@ -430,9 +425,9 @@ void *save(void *args)
 }
 
 #if _WIN32
-int wmain(int argc, wchar_t **argv)
+int wmain(int argc, wchar_t** argv)
 #else
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 #endif
 {
     path_t inputpath;
@@ -452,7 +447,7 @@ int main(int argc, char **argv)
 #if _WIN32
     setlocale(LC_ALL, "");
     wchar_t opt;
-    while ((opt = getopt(argc, argv, L"i:o:s:t:m:n:g:j:f:vxh")) != (wchar_t)-1)
+    while ((opt = getopt(argc, argv, L"i:o:s:t:m:n:g:j:f:vxh")) != (wchar_t) -1)
     {
         switch (opt)
         {
@@ -556,7 +551,7 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    for (int i = 0; i < (int)tilesize.size(); i++)
+    for (int i = 0; i < (int) tilesize.size(); i++)
     {
         if (tilesize[i] != 0 && tilesize[i] < 32)
         {
@@ -577,7 +572,7 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    for (int i = 0; i < (int)jobs_proc.size(); i++)
+    for (int i = 0; i < (int) jobs_proc.size(); i++)
     {
         if (jobs_proc[i] < 1)
         {
@@ -594,16 +589,13 @@ int main(int argc, char **argv)
         if (ext == PATHSTR("png") || ext == PATHSTR("PNG"))
         {
             format = PATHSTR("png");
-        }
-        else if (ext == PATHSTR("webp") || ext == PATHSTR("WEBP"))
+        } else if (ext == PATHSTR("webp") || ext == PATHSTR("WEBP"))
         {
             format = PATHSTR("webp");
-        }
-        else if (ext == PATHSTR("jpg") || ext == PATHSTR("JPG") || ext == PATHSTR("jpeg") || ext == PATHSTR("JPEG"))
+        } else if (ext == PATHSTR("jpg") || ext == PATHSTR("JPG") || ext == PATHSTR("jpeg") || ext == PATHSTR("JPEG"))
         {
             format = PATHSTR("jpg");
-        }
-        else
+        } else
         {
             fprintf(stderr, "invalid outputpath extension type\n");
             return -1;
@@ -649,8 +641,7 @@ int main(int argc, char **argv)
                     fprintf(stderr, "both %s and %s output %s ! %s will output %s\n", filename.c_str(), last_filename.c_str(), output_filename.c_str(), filename.c_str(), output_filename2.c_str());
 #endif
                     output_filename = output_filename2;
-                }
-                else
+                } else
                 {
                     last_filename = filename;
                     last_filename_noext = filename_noext;
@@ -659,13 +650,11 @@ int main(int argc, char **argv)
                 input_files[i] = inputpath + PATHSTR('/') + filename;
                 output_files[i] = outputpath + PATHSTR('/') + output_filename;
             }
-        }
-        else if (!path_is_directory(inputpath) && !path_is_directory(outputpath))
+        } else if (!path_is_directory(inputpath) && !path_is_directory(outputpath))
         {
             input_files.push_back(inputpath);
             output_files.push_back(outputpath);
-        }
-        else
+        } else
         {
             fprintf(stderr, "inputpath and outputpath must be either file or directory at the same time\n");
             return -1;
@@ -677,8 +666,7 @@ int main(int argc, char **argv)
     if (model.find(PATHSTR("models")) != path_t::npos || model.find(PATHSTR("models2")) != path_t::npos)
     {
         prepadding = 10;
-    }
-    else
+    } else
     {
         fprintf(stderr, "unknown model dir type\n");
         return -1;
@@ -702,8 +690,7 @@ int main(int argc, char **argv)
     {
         swprintf(parampath, 256, L"%s/%s-x%s.param", model.c_str(), modelname.c_str(), std::to_string(scale));
         swprintf(modelpath, 256, L"%s/%s-x%s.bin", model.c_str(), modelname.c_str(), std::to_string(scale));
-    }
-    else
+    } else
     {
         swprintf(parampath, 256, L"%s/%s.param", model.c_str(), modelname.c_str());
         swprintf(modelpath, 256, L"%s/%s.bin", model.c_str(), modelname.c_str());
@@ -717,8 +704,7 @@ int main(int argc, char **argv)
     {
         sprintf(parampath, "%s/%s-x%s.param", model.c_str(), modelname.c_str(), std::to_string(scale).c_str());
         sprintf(modelpath, "%s/%s-x%s.bin", model.c_str(), modelname.c_str(), std::to_string(scale).c_str());
-    }
-    else
+    } else
     {
         sprintf(parampath, "%s/%s.param", model.c_str(), modelname.c_str());
         sprintf(modelpath, "%s/%s.bin", model.c_str(), modelname.c_str());
@@ -732,6 +718,7 @@ int main(int argc, char **argv)
     CoInitializeEx(NULL, COINIT_MULTITHREADED);
 #endif
 
+    fprintf(stderr, "ncnn::create_gpu_instance()\n");
     ncnn::create_gpu_instance();
 
     if (gpuid.empty())
@@ -739,7 +726,7 @@ int main(int argc, char **argv)
         gpuid.push_back(ncnn::get_default_gpu_index());
     }
 
-    const int use_gpu_count = (int)gpuid.size();
+    const int use_gpu_count = (int) gpuid.size();
 
     if (jobs_proc.empty())
     {
@@ -767,6 +754,7 @@ int main(int argc, char **argv)
         }
     }
 
+    fprintf(stderr, "compute_queue_count() loop\n");
     int total_jobs_proc = 0;
     for (int i = 0; i < use_gpu_count; i++)
     {
@@ -775,6 +763,7 @@ int main(int argc, char **argv)
         total_jobs_proc += jobs_proc[i];
     }
 
+    fprintf(stderr, "get_heap_budget() loop\n");
     for (int i = 0; i < use_gpu_count; i++)
     {
         if (tilesize[i] != 0)
@@ -797,7 +786,9 @@ int main(int argc, char **argv)
     }
 
     {
-        std::vector<RealESRGAN *> realesrgan(use_gpu_count);
+        fprintf(stderr, "RealESRGAN realesrgan(use_gpu_count): %d\n", use_gpu_count);
+        fprintf(stderr, "realesrgan.load(paramfullpath, modelfullpath): %s, %s\n", paramfullpath.c_str(), modelfullpath.c_str());
+        std::vector<RealESRGAN*> realesrgan(use_gpu_count);
 
         for (int i = 0; i < use_gpu_count; i++)
         {
@@ -810,6 +801,7 @@ int main(int argc, char **argv)
             realesrgan[i]->prepadding = prepadding;
         }
 
+        fprintf(stderr, "main routine\n");
         // main routine
         {
             // load image
@@ -819,7 +811,7 @@ int main(int argc, char **argv)
             ltp.input_files = input_files;
             ltp.output_files = output_files;
 
-            ncnn::Thread load_thread(load, (void *)&ltp);
+            ncnn::Thread load_thread(load, (void*) &ltp);
 
             // realesrgan proc
             std::vector<ProcThreadParams> ptp(use_gpu_count);
@@ -828,14 +820,14 @@ int main(int argc, char **argv)
                 ptp[i].realesrgan = realesrgan[i];
             }
 
-            std::vector<ncnn::Thread *> proc_threads(total_jobs_proc);
+            std::vector<ncnn::Thread*> proc_threads(total_jobs_proc);
             {
                 int total_jobs_proc_id = 0;
                 for (int i = 0; i < use_gpu_count; i++)
                 {
                     for (int j = 0; j < jobs_proc[i]; j++)
                     {
-                        proc_threads[total_jobs_proc_id++] = new ncnn::Thread(proc, (void *)&ptp[i]);
+                        proc_threads[total_jobs_proc_id++] = new ncnn::Thread(proc, (void*) &ptp[i]);
                     }
                 }
             }
@@ -844,10 +836,10 @@ int main(int argc, char **argv)
             SaveThreadParams stp;
             stp.verbose = verbose;
 
-            std::vector<ncnn::Thread *> save_threads(jobs_save);
+            std::vector<ncnn::Thread*> save_threads(jobs_save);
             for (int i = 0; i < jobs_save; i++)
             {
-                save_threads[i] = new ncnn::Thread(save, (void *)&stp);
+                save_threads[i] = new ncnn::Thread(save, (void*) &stp);
             }
 
             // end
