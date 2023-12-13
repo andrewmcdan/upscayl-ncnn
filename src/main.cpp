@@ -226,7 +226,7 @@ void* load(void* args)
 #if _WIN32
             fwprintf(stderr, L"Failed to open file: %ls\n", imagepath.c_str());
 #else  // _WIN32
-            fprintf(stderr, "Failed to open file: %s\n", imagepath_str.c_str());
+            fprintf(stderr, "Failed to open file: %s\n", imagepath.c_str());
 #endif // _WIN32
             continue;
         }
