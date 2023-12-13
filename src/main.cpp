@@ -913,7 +913,7 @@ int main(int argc, char** argv)
             while (input_from_stdin != "exit" && input_from_stdin != "quit" && input_from_stdin != "q" && input_from_stdin != "e" && input_from_stdin != "x" && input_from_stdin != "X" && input_from_stdin != "Exit" && input_from_stdin != "Quit" && input_from_stdin != "Q" && input_from_stdin != "E" && continuous_mode == 1) {
                 std::vector<path_t> input_files;
                 std::vector<path_t> output_files;
-                std::vector<path_t> files;
+                std::vector<std::string> files;
 
                 std::istringstream iss(input_from_stdin);
                 std::string token;
