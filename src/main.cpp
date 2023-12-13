@@ -921,8 +921,11 @@ int main(int argc, char** argv)
                         file_split.push_back(token1);
                     }
 
-                    input_files.push_back((path_t) file_split[0]);
-                    output_files.push_back((path_t) file_split[1]);
+                    std::string input_file = file_split.at(0);
+                    std::string output_file = file_split.at(1);
+
+                    input_files.push_back(input_file);
+                    output_files.push_back(output_file);
                 }
 
                 mainProcess(scale, jobs_load, input_files, output_files, use_gpu_count, jobs_proc, total_jobs_proc, jobs_save, verbose, realesrgan);
