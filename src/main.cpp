@@ -918,7 +918,7 @@ int main(int argc, char** argv)
                 std::istringstream iss(input_from_stdin);
                 std::string token;
                 while (std::getline(iss, token, ';')) {
-                    files.push_back(token.c_str());
+                    files.push_back(token);
                 }
 
                 for (auto file : files) {
@@ -927,11 +927,24 @@ int main(int argc, char** argv)
                     std::istringstream iss(file);
                     std::string token1;
                     while (std::getline(iss, token1, ':')) {
-                        file_split.push_back(token1.c_str());
+                        file_split.push_back(token1);
                     }
+#if _WIN32
+                    std::wstring input_file = std::wstring(file_split.at(0).begin(), file_split.at(0).end());
+                    std::wstring output_file = std::wstring(file_split.at(1).begin(), file_split.at(1).end());
 
+                    wchar_t* input_file_wchar = new wchar_t[input_file.length() + 1];
+                    wchar_t* output_file_wchar = new wchar_t[output_file.length() + 1];
+
+                    wcscpy(input_file_wchar, input_file.c_str());
+                    wcscpy(output_file_wchar, output_file.c_str());
+
+                    input_files.push_back((path_t) input_file_wchar);
+                    output_files.push_back((path_t) output_file_wchar);
+#else                    
                     input_files.push_back(file_split.at(0));
                     output_files.push_back(file_split.at(1));
+#endif
                 }
 
                 mainProcess(scale, jobs_load, input_files, output_files, use_gpu_count, jobs_proc, total_jobs_proc, jobs_save, verbose, realesrgan);
