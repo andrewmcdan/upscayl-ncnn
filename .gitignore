@@ -3,7 +3,6 @@
 build
 Debug
 release
-
 # Prerequisites
 *.d
 

@@ -215,6 +215,11 @@ void* load(void* args)
 #else
         FILE* fp = fopen(imagepath.c_str(), "rb");
 #endif
+        if (!fp) {
+
+            fprintf(stderr, "Failed to open file: %s\n", imagepath_str.c_str());
+            continue;
+        }
         if (fp)
         {
             // read whole file
@@ -298,8 +303,8 @@ void* load(void* args)
 #else  // _WIN32
             fprintf(stderr, "decode image %s failed\n", imagepath.c_str());
 #endif // _WIN32
-        }
-    }
+                        }
+                    }
 
     return 0;
 }
@@ -611,7 +616,7 @@ int main(int argc, char** argv)
     {
         print_usage();
         return -1;
-    }
+        }
 
     if (tilesize.size() != (gpuid.empty() ? 1 : gpuid.size()) && !tilesize.empty())
     {
@@ -886,7 +891,7 @@ int main(int argc, char** argv)
 
                 std::istringstream iss(input_from_stdin);
                 std::string token;
-                while (std::getline(iss, token, ' ')) {
+                while (std::getline(iss, token, ';')) {
                     files.push_back(token);
                 }
 
@@ -920,4 +925,4 @@ int main(int argc, char** argv)
     ncnn::destroy_gpu_instance();
 
     return 0;
-}
+    }

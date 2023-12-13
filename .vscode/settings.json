@@ -1,3 +1,7 @@
 {
-  "cmake.sourceDirectory": "O:/Projects/Upscayl-ncnn/upscayl-ncnn/src"
+    "cmake.sourceDirectory": "O:/Projects/Upscayl-ncnn/upscayl-ncnn/src",
+    "files.associations": {
+        "*.ino": "cpp",
+        "algorithm": "cpp"
+    }
 }
