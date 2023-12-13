@@ -916,7 +916,7 @@ int main(int argc, char** argv)
                 std::vector<path_t> files;
 
                 std::istringstream iss(input_from_stdin);
-                path_t token;
+                std::string token;
                 while (std::getline(iss, token, ';')) {
                     files.push_back(token);
                 }
@@ -925,7 +925,7 @@ int main(int argc, char** argv)
                     std::vector<std::string> file_split;
 
                     std::istringstream iss(file);
-                    path_t token1;
+                    std::string token1;
                     while (std::getline(iss, token1, ':')) {
                         file_split.push_back(token1);
                     }
