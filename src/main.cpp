@@ -424,6 +424,74 @@ void* save(void* args)
     return 0;
 }
 
+void mainProcess(int scale, int jobs_load, std::vector<path_t> input_files, std::vector<path_t> output_files, int use_gpu_count, std::vector<int> jobs_proc, int total_jobs_proc, int jobs_save, int verbose, std::vector<RealESRGAN*> realesrgan) {
+    LoadThreadParams ltp;
+    ltp.scale = scale;
+    ltp.jobs_load = jobs_load;
+    ltp.input_files = input_files;
+    ltp.output_files = output_files;
+
+    ncnn::Thread load_thread(load, (void*) &ltp);
+
+    // realesrgan proc
+    std::vector<ProcThreadParams> ptp(use_gpu_count);
+    for (int i = 0; i < use_gpu_count; i++)
+    {
+        ptp[i].realesrgan = realesrgan[i];
+    }
+
+    std::vector<ncnn::Thread*> proc_threads(total_jobs_proc);
+    {
+        int total_jobs_proc_id = 0;
+        for (int i = 0; i < use_gpu_count; i++)
+        {
+            for (int j = 0; j < jobs_proc[i]; j++)
+            {
+                proc_threads[total_jobs_proc_id++] = new ncnn::Thread(proc, (void*) &ptp[i]);
+            }
+        }
+    }
+
+    // save image
+    SaveThreadParams stp;
+    stp.verbose = verbose;
+
+    std::vector<ncnn::Thread*> save_threads(jobs_save);
+    for (int i = 0; i < jobs_save; i++)
+    {
+        save_threads[i] = new ncnn::Thread(save, (void*) &stp);
+    }
+
+    // end
+    load_thread.join();
+
+    Task end;
+    end.id = -233;
+
+    for (int i = 0; i < total_jobs_proc; i++)
+    {
+        toproc.put(end);
+    }
+
+    for (int i = 0; i < total_jobs_proc; i++)
+    {
+        proc_threads[i]->join();
+        delete proc_threads[i];
+    }
+
+    for (int i = 0; i < jobs_save; i++)
+    {
+        tosave.put(end);
+    }
+
+    for (int i = 0; i < jobs_save; i++)
+    {
+        save_threads[i]->join();
+        delete save_threads[i];
+    }
+
+}
+
 #if _WIN32
 int wmain(int argc, wchar_t** argv)
 #else
@@ -805,70 +873,41 @@ int main(int argc, char** argv)
         // main routine
         {
             // load image
-            LoadThreadParams ltp;
-            ltp.scale = scale;
-            ltp.jobs_load = jobs_load;
-            ltp.input_files = input_files;
-            ltp.output_files = output_files;
+            //XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+            mainProcess(scale, jobs_load, input_files, output_files, use_gpu_count, jobs_proc, total_jobs_proc, jobs_save, verbose, realesrgan);
 
-            ncnn::Thread load_thread(load, (void*) &ltp);
+            std::string input_from_stdin = "";
+            std::getline(std::cin, input_from_stdin);
 
-            // realesrgan proc
-            std::vector<ProcThreadParams> ptp(use_gpu_count);
-            for (int i = 0; i < use_gpu_count; i++)
-            {
-                ptp[i].realesrgan = realesrgan[i];
-            }
+            while (input_from_stdin != "exit") {
+                std::vector<path_t> input_files;
+                std::vector<path_t> output_files;
+                std::vector<std::string> files;
 
-            std::vector<ncnn::Thread*> proc_threads(total_jobs_proc);
-            {
-                int total_jobs_proc_id = 0;
-                for (int i = 0; i < use_gpu_count; i++)
-                {
-                    for (int j = 0; j < jobs_proc[i]; j++)
-                    {
-                        proc_threads[total_jobs_proc_id++] = new ncnn::Thread(proc, (void*) &ptp[i]);
-                    }
+                std::istringstream iss(input_from_stdin);
+                std::string token;
+                while (std::getline(iss, token, ' ')) {
+                    files.push_back(token);
                 }
+
+                for (auto file : files) {
+                    std::vector<std::string> file_split;
+
+                    std::istringstream iss(file);
+                    std::string token1;
+                    while (std::getline(iss, token1, ':')) {
+                        file_split.push_back(token1);
+                    }
+
+                    input_files.push_back(file_split[0]);
+                    output_files.push_back(file_split[1]);
+                }
+
+                mainProcess(scale, jobs_load, input_files, output_files, use_gpu_count, jobs_proc, total_jobs_proc, jobs_save, verbose, realesrgan);
+                std::getline(std::cin, input_from_stdin);
             }
 
-            // save image
-            SaveThreadParams stp;
-            stp.verbose = verbose;
 
-            std::vector<ncnn::Thread*> save_threads(jobs_save);
-            for (int i = 0; i < jobs_save; i++)
-            {
-                save_threads[i] = new ncnn::Thread(save, (void*) &stp);
-            }
-
-            // end
-            load_thread.join();
-
-            Task end;
-            end.id = -233;
-
-            for (int i = 0; i < total_jobs_proc; i++)
-            {
-                toproc.put(end);
-            }
-
-            for (int i = 0; i < total_jobs_proc; i++)
-            {
-                proc_threads[i]->join();
-                delete proc_threads[i];
-            }
-
-            for (int i = 0; i < jobs_save; i++)
-            {
-                tosave.put(end);
-            }
-
-            for (int i = 0; i < jobs_save; i++)
-            {
-                save_threads[i]->join();
-                delete save_threads[i];
-            }
         }
 
         for (int i = 0; i < use_gpu_count; i++)
