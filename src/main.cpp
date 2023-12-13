@@ -116,6 +116,8 @@ static void print_usage()
     fprintf(stderr, "  -x                   enable tta mode\n");
     fprintf(stderr, "  -f format            output image format (jpg/png/webp, default=ext/png)\n");
     fprintf(stderr, "  -v                   verbose output\n");
+    fprintf(stderr, "  -c                   continuous mode: after upscaling completes, send new infile and outfile params as \"infile1.png:outfile2.png;infile2.png:outfile2.png\"\n");
+    fprintf(stderr, "                       to exit continuous mode, send x,q,exit, or quit after completion of a run\n");
 }
 
 class Task
@@ -529,12 +531,13 @@ int main(int argc, char** argv)
     int jobs_save = 2;
     int verbose = 0;
     int tta_mode = 0;
+    int continuous_mode = 0;
     path_t format = PATHSTR("png");
 
 #if _WIN32
     setlocale(LC_ALL, "");
     wchar_t opt;
-    while ((opt = getopt(argc, argv, L"i:o:s:t:m:n:g:j:f:vxh")) != (wchar_t) -1)
+    while ((opt = getopt(argc, argv, L"i:o:s:t:m:n:g:j:f:vxch")) != (wchar_t) -1)
     {
         switch (opt)
         {
@@ -572,6 +575,9 @@ int main(int argc, char** argv)
         case L'x':
             tta_mode = 1;
             break;
+        case L'c':
+            continuous_mode = 1;
+            break;
         case L'h':
         default:
             print_usage();
@@ -580,7 +586,7 @@ int main(int argc, char** argv)
     }
 #else  // _WIN32
     int opt;
-    while ((opt = getopt(argc, argv, "i:o:s:t:m:n:g:j:f:vxh")) != -1)
+    while ((opt = getopt(argc, argv, "i:o:s:t:m:n:g:j:f:vxch")) != -1)
     {
         switch (opt)
         {
@@ -617,6 +623,9 @@ int main(int argc, char** argv)
             break;
         case 'x':
             tta_mode = 1;
+            break;
+        case 'c':
+            continuous_mode = 1;
             break;
         case 'h':
         default:
@@ -901,13 +910,13 @@ int main(int argc, char** argv)
             std::string input_from_stdin = "";
             std::getline(std::cin, input_from_stdin);
 
-            while (input_from_stdin != "exit") {
+            while (input_from_stdin != "exit" && input_from_stdin != "quit" && input_from_stdin != "q" && input_from_stdin != "e" && input_from_stdin != "x" && input_from_stdin != "X" && input_from_stdin != "Exit" && input_from_stdin != "Quit" && input_from_stdin != "Q" && input_from_stdin != "E" && continuous_mode == 1) {
                 std::vector<path_t> input_files;
                 std::vector<path_t> output_files;
-                std::vector<std::string> files;
+                std::vector<path_t> files;
 
                 std::istringstream iss(input_from_stdin);
-                std::string token;
+                path_t token;
                 while (std::getline(iss, token, ';')) {
                     files.push_back(token);
                 }
@@ -916,16 +925,13 @@ int main(int argc, char** argv)
                     std::vector<std::string> file_split;
 
                     std::istringstream iss(file);
-                    std::string token1;
+                    path_t token1;
                     while (std::getline(iss, token1, ':')) {
                         file_split.push_back(token1);
                     }
 
-                    std::string input_file = file_split.at(0);
-                    std::string output_file = file_split.at(1);
-
-                    input_files.push_back(input_file);
-                    output_files.push_back(output_file);
+                    input_files.push_back(file_split.at(0));
+                    output_files.push_back(file_split.at(1));
                 }
 
                 mainProcess(scale, jobs_load, input_files, output_files, use_gpu_count, jobs_proc, total_jobs_proc, jobs_save, verbose, realesrgan);

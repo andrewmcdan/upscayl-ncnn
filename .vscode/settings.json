@@ -2,6 +2,12 @@
     "cmake.sourceDirectory": "O:/Projects/Upscayl-ncnn/upscayl-ncnn/src",
     "files.associations": {
         "*.ino": "cpp",
-        "algorithm": "cpp"
+        "algorithm": "cpp",
+        "array": "cpp",
+        "deque": "cpp",
+        "map": "cpp",
+        "unordered_map": "cpp",
+        "vector": "cpp",
+        "xstring": "cpp"
     }
 }
