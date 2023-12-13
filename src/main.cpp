@@ -918,7 +918,7 @@ int main(int argc, char** argv)
                 std::istringstream iss(input_from_stdin);
                 std::string token;
                 while (std::getline(iss, token, ';')) {
-                    files.push_back(token);
+                    files.push_back(token.c_str());
                 }
 
                 for (auto file : files) {
@@ -927,7 +927,7 @@ int main(int argc, char** argv)
                     std::istringstream iss(file);
                     std::string token1;
                     while (std::getline(iss, token1, ':')) {
-                        file_split.push_back(token1);
+                        file_split.push_back(token1.c_str());
                     }
 
                     input_files.push_back(file_split.at(0));
