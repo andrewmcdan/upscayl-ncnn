@@ -635,7 +635,7 @@ int main(int argc, char** argv)
     }
 #endif // _WIN32
 
-    if (inputpath.empty() || outputpath.empty())
+    if ((inputpath.empty() || outputpath.empty()) && continuous_mode == 0)
     {
         print_usage();
         return -1;
@@ -677,7 +677,7 @@ int main(int argc, char** argv)
         }
     }
 
-    if (!path_is_directory(outputpath))
+    if (continuous_mode == 0 && !path_is_directory(outputpath))
     {
         // guess format from outputpath no matter what format argument specified
         path_t ext = get_file_extension(outputpath);
@@ -707,7 +707,7 @@ int main(int argc, char** argv)
     // collect input and output filepath
     std::vector<path_t> input_files;
     std::vector<path_t> output_files;
-    {
+    if (continuous_mode == 0) {
         if (path_is_directory(inputpath) && path_is_directory(outputpath))
         {
             std::vector<path_t> filenames;
@@ -767,16 +767,6 @@ int main(int argc, char** argv)
         fprintf(stderr, "unknown model dir type\n");
         return -1;
     }
-
-    // if (modelname.find(PATHSTR("realesrgan-x4plus")) != path_t::npos
-    //     || modelname.find(PATHSTR("realesrnet-x4plus")) != path_t::npos
-    //     || modelname.find(PATHSTR("esrgan-x4")) != path_t::npos)
-    // {}
-    // else
-    // {
-    //     fprintf(stderr, "unknown model name\n");
-    //     return -1;
-    // }
 
 #if _WIN32
     wchar_t parampath[256];
@@ -905,7 +895,9 @@ int main(int argc, char** argv)
         fprintf(stderr, "main routine\n");
         // main routine
         {
-            mainProcess(scale, jobs_load, input_files, output_files, use_gpu_count, jobs_proc, total_jobs_proc, jobs_save, verbose, realesrgan);
+            if (continuous_mode == 0) {
+                mainProcess(scale, jobs_load, input_files, output_files, use_gpu_count, jobs_proc, total_jobs_proc, jobs_save, verbose, realesrgan);
+            }
 
             std::string input_from_stdin = "";
             std::getline(std::cin, input_from_stdin);
