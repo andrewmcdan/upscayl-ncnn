@@ -26,7 +26,7 @@ typedef std::string path_t;
 
 bool is_image_file(const std::string& filename)
 {
-    const std::vector<std::string> extensions = {".jpg", ".jpeg", ".png", ".bmp", ".webp"};
+    const std::vector<std::string> extensions = { ".jpg", ".jpeg", ".png", ".bmp", ".webp" };
 
     // Check if the filename contains a dot
     size_t last_dot = filename.find_last_of(".");
@@ -141,7 +141,18 @@ static path_t get_file_extension(const path_t& path)
     size_t dot = path.rfind(PATHSTR('.'));
     if (dot == path_t::npos)
         return path_t();
-
+    size_t quotes = path.rfind(PATHSTR('\"'));
+    if (quotes != path_t::npos && quotes < dot) {
+        path_t new_path = path.substr(quotes + 1);
+        size_t new_dot = new_path.rfind(PATHSTR('.'));
+        if (new_dot != path_t::npos) {
+            path_t new_extension = new_path.substr(new_dot + 1);
+            if (new_extension.rfind(PATHSTR('\"')) == path_t::npos)
+                return new_extension;
+            else
+                return new_extension.substr(0, new_extension.rfind(PATHSTR('\"')));
+        }
+    }
     return path.substr(dot + 1);
 }
 
