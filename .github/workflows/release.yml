@@ -20,10 +20,12 @@ jobs:
     steps:
       - name: get-appname
         id: get_appname
-        run: echo ::set-output name=APPNAME::${APPLICATION_NAME}
+        # run: echo ::set-output name=APPNAME::${APPLICATION_NAME}
+        run: echo "APPNAME=${APPLICATION_NAME}" >> $GITHUB_OUTPUT
       - name: get-version
         id: get_version
-        run: echo ::set-output name=VERSION::${{ github.event.inputs.version }}
+        # run: echo ::set-output name=VERSION::${{ github.event.inputs.version }}
+        run: echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
 
   ubuntu:
     needs: [setup]
