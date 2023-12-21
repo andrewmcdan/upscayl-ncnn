@@ -900,9 +900,10 @@ int main(int argc, char** argv)
             }
 
             std::string input_from_stdin = "";
-            std::getline(std::cin, input_from_stdin);
+            
 
             while (input_from_stdin != "exit" && input_from_stdin != "quit" && input_from_stdin != "q" && input_from_stdin != "e" && input_from_stdin != "x" && input_from_stdin != "X" && input_from_stdin != "Exit" && input_from_stdin != "Quit" && input_from_stdin != "Q" && input_from_stdin != "E" && continuous_mode == 1) {
+                std::getline(std::cin, input_from_stdin);
                 std::vector<path_t> input_files;
                 std::vector<path_t> output_files;
                 std::vector<std::string> files;
@@ -940,7 +941,7 @@ int main(int argc, char** argv)
                 }
 
                 mainProcess(scale, jobs_load, input_files, output_files, use_gpu_count, jobs_proc, total_jobs_proc, jobs_save, verbose, realesrgan);
-                std::getline(std::cin, input_from_stdin);
+                //std::getline(std::cin, input_from_stdin);
             }
         }
 
